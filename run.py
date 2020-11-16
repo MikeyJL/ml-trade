@@ -1,116 +1,75 @@
-import gym
-import math
-import random
-import argparse
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from collections import namedtuple
-from itertools import count
-from PIL import Image
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-import torchvision.transforms as T
-
-import argparse
+import pickle
 import time
+import numpy as np
+import argparse
+import re
 
 from envs import TradingEnv
 from agent import DQNAgent
-from utility import get_data, maybe_make_dir
+from utils import get_data, get_scaler, maybe_make_dir
 
-# PARAMS
 
-batch_size = 256
-gamma = 0.999
-eps_start = 1
-eps_end = 0.01
-eps_decay = 0.001
-target_update = 10
-memory_size = 100000
-alpha = 0.001
-num_episodes = 1000
 
-# RUN
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-e', '--episode', type=int, default=2000,
+                      help='number of episode to run')
+  parser.add_argument('-b', '--batch_size', type=int, default=32,
+                      help='batch size for experience replay')
+  parser.add_argument('-i', '--initial_invest', type=int, default=500,
+                      help='initial investment amount')
+  parser.add_argument('-m', '--mode', type=str, required=True,
+                      help='either "train" or "test"')
+  parser.add_argument('-w', '--weights', type=str, help='a trained model weights')
+  args = parser.parse_args()
 
-## Makes cmd for script
-parser = argparse.ArgumentParser()
-parser.add_argument('-e', '--episode', type=int, default=2000,
-                    help='number of episode to run')
-parser.add_argument('-b', '--batch_size', type=int, default=32,
-                    help='batch size for experience replay')
-parser.add_argument('-i', '--initial_invest', type=int, default=20000,
-                    help='initial investment amount')
-parser.add_argument('-m', '--mode', type=str, required=True,
-                    help='either "train" or "test"')
-parser.add_argument('-w', '--weights', type=str, help='a trained model weights')
-args = parser.parse_args()
+  maybe_make_dir('weights')
+  maybe_make_dir('portfolio_val')
 
-# Creates new files to store data
-maybe_make_dir('weights')
-maybe_make_dir('portfolio_val')
+  timestamp = time.strftime('%Y%m%d%H%M')
 
-# Gets time
-timestamp = time.strftime('%Y-%m-%d')
+  data = get_data()
+  train_data = data[:data.shape[0]:]
+  test_data = data[:data.shape[0]:]
 
-# Set datas
-data = get_data('Close', 'USDGBP=X', '2012-01-01' timestamp)
-train_samples = data[:, data.shape[0]:]
-test_samples = data[:, data.shape[0]:]
+  env = TradingEnv(train_data, args.initial_invest)
+  state_size = env.observation_space.shape
+  action_size = env.action_space.n
+  agent = DQNAgent(state_size, action_size)
+  scaler = get_scaler(env)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+"""
+  portfolio_value = []
 
-env = TradeEnvManager(device)
-state_size = env.observation_space.shape
-action_size = env.action_space.n
-strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
-agent = Agent(strategy, env.num_actions_available(), device)
-memory = ReplayMemory(memory_size)
+  if args.mode == 'test':
+    # remake the env with test data
+    env = TradingEnv(test_data, args.initial_invest)
+    # load trained weights
+    agent.load(args.weights)
+    # when test, the timestamp is same as time when weights was trained
+    timestamp = re.findall(r'\d{12}', args.weights)[0]
 
-policy_net = DQN(env.get_screen_height(), env.get_screen_width()).to(device)
-target_net = DQN(env.get_screen_height(), env.get_screen_width()).to(device)
+  for e in range(args.episode):
+    state = env.reset()
+    state = scaler.transform([state])
+    for time in range(env.n_step):
+      action = agent.act(state)
+      next_state, reward, done, info = env.step(action)
+      next_state = scaler.transform([next_state])
+      if args.mode == 'train':
+        agent.remember(state, action, reward, next_state, done)
+      state = next_state
+      if done:
+        print("episode: {}/{}, episode end value: {}".format(
+          e + 1, args.episode, info['cur_val']))
+        portfolio_value.append(info['cur_val']) # append episode end portfolio value
+        break
+      if args.mode == 'train' and len(agent.memory) > args.batch_size:
+        agent.replay(args.batch_size)
+    if args.mode == 'train' and (e + 1) % 10 == 0:  # checkpoint weights
+      agent.save('weights/{}-dqn.h5'.format(timestamp))
 
-target_net.load_state_dict(policy_net.state_dict())
-target_net.eval()
-
-optimizer = optim.Adam(params=policy_net.parameters(), alpha=alpha)
-
-# TRAIN
-
-episode_durations = []
-
-for episode in range(num_episodes):
-  env.reset()
-  state = env.get_state()
-
-  for timestep in count():
-    action = agent.select_action(state, policy_net)
-    reward = env.take_action(action)
-    next_state = env.get_state()
-    memory.push(Experience(state, action, next_state, reward))
-    state = next_state
-
-    if memory.can_provide_sample(batch_size):
-      experiences = memory.sample(batch_size)
-      states, actions, rewards, next_states = extract_tensors(experiences)
-
-      current_q_values = QValues.get_current(policy_net, states, actions)
-      next_q_values = QValues.get_next(target_net, next_states)
-      target_q_values = (next_q_values * gamma) + rewards
-
-      loss = F.mse_loss(current_q_values, target_q_values.unsqueeze(1))
-      optimizer.zero_grad()
-      loss.backward()
-      optimizer.step()
-  
-    if env.done:
-      episode_durations.append(timestep)
-      plot(episode_durations, 100)
-      break
-  
-  if episode % target_update == 0:
-    target_net.load_state_dict(policy_net.state_dict())
-
-env.close()
+  # save portfolio value history to disk
+  with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
+    pickle.dump(portfolio_value, fp)
+"""

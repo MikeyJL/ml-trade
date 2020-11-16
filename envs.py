@@ -4,11 +4,12 @@ from gym.utils import seeding
 import numpy as np
 import itertools
 
+
 class TradingEnv(gym.Env):
-  def __init__(self, train_data, init_invest=20000):
+  def __init__(self, train_data, init_invest=500):
     # data
     self.stock_price_history = train_data
-    self.n_stock, self.n_step = self.stock_price_history.shape
+    self.n_step, self.n_stock = self.stock_price_history.shape
 
     # instance attributes
     self.init_invest = init_invest
@@ -21,15 +22,16 @@ class TradingEnv(gym.Env):
     self.action_space = spaces.Discrete(3**self.n_stock)
 
     # observation space: give estimates in order to sample and build scaler
-    stock_max_price = self.stock_price_history.max(axis=1)
-    stock_range = [[0, init_invest * 2 // mx] for mx in stock_max_price]
-    price_range = [[0, mx] for mx in stock_max_price]
-    cash_in_hand_range = [[0, init_invest * 2]]
+    stock_max_price = self.stock_price_history.max(axis=0)
+    stock_range = [[0.00001, init_invest * 2 / mx] for mx in stock_max_price]
+    price_range = [[0.00001, mx] for mx in stock_max_price]
+    cash_in_hand_range = [[1, init_invest * 2]]
+    print(stock_range + price_range + cash_in_hand_range)
     self.observation_space = spaces.MultiDiscrete(stock_range + price_range + cash_in_hand_range)
 
     # seed and start
-    self._seed()
-    self._reset()
+    # self._seed()
+    # self._reset()
 
 
   def _seed(self, seed=None):
