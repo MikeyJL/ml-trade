@@ -1,4 +1,4 @@
-from live import LiveData
+import time
 
-print(LiveData()._get_live_data())
-
+for time in range(20):
+  print(time)

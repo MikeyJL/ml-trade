@@ -13,7 +13,6 @@ def dqn_sa(n_obs, n_action, n_hidden_layer=1, n_neuron_per_layer=32,
     model.add(Dense(n_neuron_per_layer, activation=activation))
   model.add(Dense(n_action, activation='linear'))
   model.compile(loss=loss, optimizer=Adam())
-  print(model.summary())
   return model
 
 def nn_predict(dataset):
