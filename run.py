@@ -18,15 +18,13 @@ if __name__ == '__main__':
   parser.add_argument('-b', '--batch_size', type=int, default=32,
                       help='batch size for experience replay')
   parser.add_argument('-m', '--mode', type=str, required=True,
-                      help='either "train" or "test"')
-  parser.add_argument('-w', '--weights', type=str,
-                      help='a trained model weights')
+                      help='either "train" or "test" by entering target weights file')
   args = parser.parse_args()
 
   maybe_make_dir('weights')
   maybe_make_dir('portfolio_val')
 
-  timestamp = time.strftime('%Y%m%d%H%M')
+  timestamp = time.strftime('%Y-%m-%d-%H-%M')
 
   data = get_data()
   train_data = data[:data.shape[0]:]
@@ -40,12 +38,8 @@ if __name__ == '__main__':
   portfolio_value = []
 
   if args.mode == 'test':
-    # remake the env with test data
-    env = TradingEnv(test_data, args.initial_invest)
-    # load trained weights
-    agent.load(args.weights)
-    # when test, the timestamp is same as time when weights was trained
-    timestamp = re.findall(r'\d{12}', args.weights)[0]
+    env = TradingEnv(test_data, args.steps)
+    agent.load(args.mode)
 
   for e in range(args.episodes):
     state = env._reset()
