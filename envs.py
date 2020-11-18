@@ -46,14 +46,12 @@ class TradingEnv(gym.Env):
 
   def _step(self, action):
     assert self.action_space.contains(action)
-    prev_val = self.cash_in_hand
     self.cur_step += 1
     self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
     self._trade(action)
-    cur_val = LiveData()._get_account_val()
-    reward = cur_val - prev_val
+    reward = float(LiveData()._get_account()['accounts'][1]['balance']['profitLoss'])
     done = self.cur_step == self.max_step - 1
-    info = {'cur_val': cur_val}
+    info = {'cur_val': LiveData()._get_account_val()}
     return self._get_obs(), reward, done, info
 
 
@@ -68,9 +66,9 @@ class TradingEnv(gym.Env):
   def _trade(self, action):
     if action == 0:
       LiveData()._open_position('SELL')
-      print('BUY')
+      print('SELL')
     elif action == 2:
       LiveData()._open_position('BUY')
-      print('SELL')
+      print('BUY')
     else:
       print('HOLD')

@@ -35,7 +35,7 @@ def nn_predict(dataset):
   model.add(Dense(25))
   model.add(Dense(1))
   model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-  model.fit(currency_samples, currency_labels, batch_size=1, epochs=1)
+  model.fit(currency_samples, currency_labels, batch_size=1, epochs=1, verbose=2)
   test_data = scaled_data[training_sample_80 - 30:, :]
   test_samples = []
   test_labels = dataset[training_sample_80:, :]

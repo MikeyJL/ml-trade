@@ -59,34 +59,42 @@ class LiveData():
     return positions_json
 
   
-  def _close_position(self, id, dir, size):
+  def _close_positions(self):
+    open_positions = self._get_positions()['positions']
+    closing_size = 0
+    open_buy = 0
+    open_sell = 0
+    for n in open_positions:
+      closing_size += float(n['position']['size'])
+      if n['position']['direction'] == 'BUY':
+        open_buy += 1
+      else:
+        open_sell += 1
+    if open_buy > open_sell:
+      rm_dir = 'SELL'
+    else:
+      rm_dir = 'BUY'
+    
     close_position_header = self.default_header
-    close_position_header['Version'] = '1'
+    close_position_header['Version'] = '2'
     close_position_header['Authorization'] = self.login_auth
     close_position_header['IG-ACCOUNT-ID'] = self.login_id
-
-    op_dir = None
-    if dir == 'BUY':
-      op_dir = 'SELL'
-    else:
-      op_dir = 'BUY'
+    
     close_position_body = {
-      "dealId": id,
-      "direction": op_dir,
-      "size": size,
-      "orderType": "MARKET"
+      "epic": "CS.D.GBPUSD.TODAY.IP",
+      "expiry": "DFB",
+      "direction": rm_dir,
+      "size": str(closing_size),
+      "orderType": "MARKET",
+      "guaranteedStop": "false",
+      "forceOpen": "false",
+      "currencyCode": "GBP"
     }
-    requests.delete('https://demo-api.ig.com/gateway/deal/positions/otc', headers=close_position_header, json=close_position_body)
+    requests.post('https://demo-api.ig.com/gateway/deal/positions/otc', headers=close_position_header, json=close_position_body)
 
   
   def _open_position(self, pos_dir):
-    open_positions = self._get_positions()['positions']
-    for n in open_positions:
-      cur_pos = n['position']
-      cur_pos_id = cur_pos['dealId']
-      cur_pos_dir = cur_pos['direction']
-      cur_pos_size = cur_pos['size']
-      self._close_position(cur_pos_id, cur_pos_dir, cur_pos_size)
+    self._close_positions()
     open_position_header = self.default_header
     open_position_header['Version'] = '2'
     open_position_header['Authorization'] = self.login_auth
@@ -96,7 +104,7 @@ class LiveData():
       "epic": "CS.D.GBPUSD.TODAY.IP",
       "expiry": "DFB",
       "direction": pos_dir,
-      "size": ".5",
+      "size": "3",
       "orderType": "MARKET",
       "guaranteedStop": "false",
       "forceOpen": "false",
