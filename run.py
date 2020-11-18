@@ -20,7 +20,8 @@ if __name__ == '__main__':
                       help='initial investment amount')
   parser.add_argument('-m', '--mode', type=str, required=True,
                       help='either "train" or "test"')
-  parser.add_argument('-w', '--weights', type=str, help='a trained model weights')
+  parser.add_argument('-w', '--weights', type=str,
+                      help='a trained model weights')
   args = parser.parse_args()
 
   maybe_make_dir('weights')
@@ -37,8 +38,6 @@ if __name__ == '__main__':
   action_size = env.action_space.n
   agent = DQNAgent(state_size, action_size)
   scaler = get_scaler(env)
-
-"""
   portfolio_value = []
 
   if args.mode == 'test':
@@ -50,8 +49,8 @@ if __name__ == '__main__':
     timestamp = re.findall(r'\d{12}', args.weights)[0]
 
   for e in range(args.episode):
-    state = env.reset()
-    state = scaler.transform([state])
+    state = env._reset()
+    state = scaler.fit_transform(state)
     for time in range(env.n_step):
       action = agent.act(state)
       next_state, reward, done, info = env.step(action)
@@ -72,4 +71,3 @@ if __name__ == '__main__':
   # save portfolio value history to disk
   with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
     pickle.dump(portfolio_value, fp)
-"""

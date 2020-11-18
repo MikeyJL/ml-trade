@@ -3,6 +3,7 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 import itertools
+from model import nn_predict
 
 
 class TradingEnv(gym.Env):
@@ -26,12 +27,11 @@ class TradingEnv(gym.Env):
     stock_range = [[0.00001, init_invest * 2 / mx] for mx in stock_max_price]
     price_range = [[0.00001, mx] for mx in stock_max_price]
     cash_in_hand_range = [[1, init_invest * 2]]
-    print(stock_range + price_range + cash_in_hand_range)
     self.observation_space = spaces.MultiDiscrete(stock_range + price_range + cash_in_hand_range)
 
     # seed and start
-    # self._seed()
-    # self._reset()
+    self._seed()
+    self._reset()
 
 
   def _seed(self, seed=None):
@@ -43,7 +43,7 @@ class TradingEnv(gym.Env):
     self.cur_step = 0
     self.stock_owned = [0] * self.n_stock
     self.stock_price = self.stock_price_history[:, self.cur_step]
-    self.cash_in_hand = self.init_invest
+    self.cash_in_hand = [self.init_invest]
     return self._get_obs()
 
 
@@ -51,7 +51,7 @@ class TradingEnv(gym.Env):
     assert self.action_space.contains(action)
     prev_val = self._get_val()
     self.cur_step += 1
-    self.stock_price = self.stock_price_history[:, self.cur_step] # update price
+    self.stock_price = self.stock_price_history[:, self.cur_step]
     self._trade(action)
     cur_val = self._get_val()
     reward = cur_val - prev_val
@@ -62,9 +62,10 @@ class TradingEnv(gym.Env):
 
   def _get_obs(self):
     obs = []
-    obs.extend(self.stock_owned)
-    obs.extend(list(self.stock_price))
+    obs.append(self.stock_owned)
+    obs.append(nn_predict(self.stock_price_history))
     obs.append(self.cash_in_hand)
+    print(obs)
     return obs
 
 

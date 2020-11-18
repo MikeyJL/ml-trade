@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import pandas_datareader as pdr
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
 
 def get_data():
@@ -25,8 +25,7 @@ def get_scaler(env):
     high.append(i)
   high.append(max_cash)
 
-  scaler = StandardScaler()
-  scaler.fit([low, high])
+  scaler = MinMaxScaler(feature_range=(0, 1))
   return scaler
 
 

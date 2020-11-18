@@ -1,7 +1,7 @@
 from collections import deque
 import random
 import numpy as np
-from model import mlp
+from model import dqn_sa
 
 
 
@@ -11,11 +11,11 @@ class DQNAgent(object):
     self.state_size = state_size
     self.action_size = action_size
     self.memory = deque(maxlen=2000)
-    self.gamma = 0.95  # discount rate
-    self.epsilon = 1.0  # exploration rate
+    self.gamma = 0.99
+    self.epsilon = 1
     self.epsilon_min = 0.01
-    self.epsilon_decay = 0.995
-    self.model = mlp(state_size, action_size)
+    self.epsilon_decay = 0.999
+    self.model = dqn_sa(state_size, action_size)
 
 
   def remember(self, state, action, reward, next_state, done):
