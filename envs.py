@@ -8,67 +8,66 @@ from ig_api import LiveData
 
 
 class TradingEnv(gym.Env):
-  def __init__(self, train_data, steps):
-    # data
+  def __init__(self, train_data, mode):
     self.stock_price_history = train_data
-    self.max_step = steps
-    self.n_stock = self.stock_price_history.shape[1]
-
-    # instance attributes
-    self.init_invest = LiveData()._get_account()['accounts'][1]['balance']['balance']
-    self.cur_step = None
+    self.max_step, self.n_stock = self.stock_price_history.shape
+    self.mode = mode
     self.stock_owned = None
     self.stock_price = None
-    self.cash_in_hand = None
+    self.action_space = spaces.Discrete(3)
 
-    # action space
-    self.action_space = spaces.Discrete(3**self.n_stock)
-
-    # observation space
     self.observation_space = np.array(self._reset()).shape
-
-    # seed and start
-    self._seed()
-    self._reset()
-
-  def _seed(self, seed=None):
-    self.np_random, seed = seeding.np_random(seed)
-    return [seed]
 
 
   def _reset(self):
     self.cur_step = 0
-    self.stock_owned = 0 * self.n_stock
-    self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
-    self.cash_in_hand = LiveData()._get_account_val()
+    self.stock_owned = 0
+    if self.mode == 'train':
+      self.stock_price = self.stock_price_history[self.cur_step]
+    else: 
+      self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
     return self._get_obs()
 
 
   def _step(self, action):
     assert self.action_space.contains(action)
     self.cur_step += 1
-    self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
     self._trade(action)
-    reward = float(LiveData()._get_account()['accounts'][1]['balance']['profitLoss'])
+    if self.mode == 'train':
+      prev_stock_price = self.stock_price
+      self.stock_price = self.stock_price_history[self.cur_step]
+      reward = self.stock_owned * (self.stock_price - prev_stock_price)
+    else:
+      self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
+      reward = float(LiveData()._get_account()['accounts'][1]['balance']['profitLoss'])
+    self.last_reward = reward
     done = self.cur_step == self.max_step - 1
-    info = {'cur_val': LiveData()._get_account_val()}
-    return self._get_obs(), reward, done, info
+    return self._get_obs(), reward, done
 
 
   def _get_obs(self):
     obs = []
     obs.append([self.stock_owned])
-    obs.append([self.stock_price])
-    obs.append([self.cash_in_hand])
+    obs.append(self.stock_price)
     return obs
 
 
   def _trade(self, action):
-    if action == 0:
-      LiveData()._open_position('SELL')
-      print('SELL')
-    elif action == 2:
-      LiveData()._open_position('BUY')
-      print('BUY')
+    if self.mode == 'train':
+      if action == 0:
+        self.stock_owned = -1
+        self.last_trade = 'SELL'
+      elif action == 2:
+        self.stock_owned = 1
+        self.last_trade = 'BUY'
+      else:
+        self.last_trade = 'HOLD'
     else:
-      print('HOLD')
+      if action == 0:
+        LiveData()._open_position('SELL')
+        self.last_trade = 'SELL'
+      elif action == 2:
+        LiveData()._open_position('BUY')
+        self.last_trade = 'BUY'
+      else:
+        self.last_trade = 'HOLD'

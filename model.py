@@ -5,15 +5,17 @@ from keras.layers import Dense, LSTM
 from keras.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 
-def dqn_sa(n_obs, n_action, n_hidden_layer=1, n_neuron_per_layer=32,
+def dqn(n_obs, n_action, n_hidden_layer=1, n_neuron_per_layer=32,
         activation='relu', loss='mse'):
   model = Sequential()
-  model.add(Dense(n_neuron_per_layer, input_shape=n_obs, activation=activation))
+  model.add(LSTM(n_neuron_per_layer, input_shape=n_obs, return_sequences=True, activation=activation))
   for _ in range(n_hidden_layer):
-    model.add(Dense(n_neuron_per_layer, activation=activation))
+    model.add(LSTM(n_neuron_per_layer, return_sequences=False, activation=activation))
   model.add(Dense(n_action, activation='linear'))
   model.compile(loss=loss, optimizer=Adam())
+  print(model.summary())
   return model
+
 
 def nn_predict(dataset):
   training_sample_80 = math.ceil(len(dataset) * .8)

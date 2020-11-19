@@ -1,7 +1,7 @@
 from collections import deque
 import random
 import numpy as np
-from model import dqn_sa
+from model import dqn
 
 
 
@@ -15,7 +15,8 @@ class DQNAgent(object):
     self.epsilon = 1
     self.epsilon_min = 0.01
     self.epsilon_decay = 0.999
-    self.model = dqn_sa(state_size, action_size)
+    self.model = dqn(state_size, action_size)
+    self.last_rmse = None
 
 
   def remember(self, state, action, reward, next_state, done):
@@ -33,23 +34,26 @@ class DQNAgent(object):
     """ vectorized implementation; 30x speed up compared with for loop """
     minibatch = random.sample(self.memory, batch_size)
 
-    states = np.array([tup[0][0] for tup in minibatch])
+    states = np.array([tup[0] for tup in minibatch])
     actions = np.array([tup[1] for tup in minibatch])
     rewards = np.array([tup[2] for tup in minibatch])
-    next_states = np.array([tup[3][0] for tup in minibatch])
+    next_states = np.array([tup[3] for tup in minibatch])
     done = np.array([tup[4] for tup in minibatch])
 
     # Q(s', a)
+    print(next_states)
+    print('-------')
+    print(self.model.predict(next_states))
     target = rewards + self.gamma * np.amax(self.model.predict(next_states), axis=1)
     # end state target is reward itself (no lookahead)
     target[done] = rewards[done]
-
+  
     # Q(s, a)
     target_f = self.model.predict(states)
     # make the agent to approximately map the current state to future discounted reward
     target_f[range(batch_size), actions] = target
-
-    self.model.fit(states, target_f, epochs=1, verbose=2)
+    self.model.fit(states, target_f, epochs=11, verbose=0)
+    self.last_rmse = np.sqrt(np.mean(target_f - states)**2)
 
     if self.epsilon > self.epsilon_min:
       self.epsilon *= self.epsilon_decay
