@@ -12,7 +12,7 @@ def dqn(n_obs, n_action, n_hidden_layer=1, n_neuron_per_layer=32,
   for _ in range(n_hidden_layer):
     model.add(LSTM(n_neuron_per_layer, return_sequences=False, activation=activation))
   model.add(Dense(n_action, activation='linear'))
-  model.compile(loss=loss, optimizer=Adam())
+  model.compile(loss=loss, optimizer=Adam(), metrics=['accuracy'])
   print(model.summary())
   return model
 
@@ -48,7 +48,6 @@ def nn_predict(dataset):
   test_samples = np.reshape(test_samples, (test_samples.shape[0], test_samples.shape[1], 1))
   predictions = model.predict(test_samples)
   predictions = scaler.inverse_transform(predictions)
-  rmse = np.sqrt(np.mean(predictions - test_labels)**2)
 
   predict_next_df = dataset
   last_30_days = predict_next_df[-30:]

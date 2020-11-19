@@ -15,7 +15,6 @@ class TradingEnv(gym.Env):
     self.stock_owned = None
     self.stock_price = None
     self.action_space = spaces.Discrete(3)
-
     self.observation_space = np.array(self._reset()).shape
 
 
@@ -24,6 +23,7 @@ class TradingEnv(gym.Env):
     self.stock_owned = 0
     if self.mode == 'train':
       self.stock_price = self.stock_price_history[self.cur_step]
+      self.cash_bal = 100
     else: 
       self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
     return self._get_obs()
@@ -37,6 +37,7 @@ class TradingEnv(gym.Env):
       prev_stock_price = self.stock_price
       self.stock_price = self.stock_price_history[self.cur_step]
       reward = self.stock_owned * (self.stock_price - prev_stock_price)
+      self.cash_bal += reward
     else:
       self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
       reward = float(LiveData()._get_account()['accounts'][1]['balance']['profitLoss'])
@@ -55,10 +56,10 @@ class TradingEnv(gym.Env):
   def _trade(self, action):
     if self.mode == 'train':
       if action == 0:
-        self.stock_owned = -1
+        self.stock_owned -= 1
         self.last_trade = 'SELL'
       elif action == 2:
-        self.stock_owned = 1
+        self.stock_owned += 1
         self.last_trade = 'BUY'
       else:
         self.last_trade = 'HOLD'

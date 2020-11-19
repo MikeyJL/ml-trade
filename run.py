@@ -46,13 +46,16 @@ if __name__ == '__main__':
     scaler = get_scaler(env)
     state = scaler.transform(state)
     for s in range(env.max_step):
+      state = np.reshape(state, (1, 2, 1))
       action = agent.act(state)
       next_state, reward, done = env._step(action)
       next_state = scaler.transform(next_state)
       if args.mode == 'train':
+        state = np.reshape(state, (2, 1))
         agent.remember(state, action, reward, next_state, done)
       state = next_state
-      print('Step: {}/{}, Trade: {}, Reward: {}, rmse: {}'.format(s + 1, env.max_step, env.last_trade, env.last_reward, agent.last_rmse))
+      print('Step: {}/{}, Trade: {}, Stocks: {}, Bal: {} Reward: {}'
+            .format(s + 1, env.max_step, env.last_trade, np.around(env.stock_owned, decimals=1), env.cash_bal, env.last_reward))
       if done:
         print("Episode: {}/{}".format(e + 1, args.episodes))
         break

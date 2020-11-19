@@ -16,7 +16,6 @@ class DQNAgent(object):
     self.epsilon_min = 0.01
     self.epsilon_decay = 0.999
     self.model = dqn(state_size, action_size)
-    self.last_rmse = None
 
 
   def remember(self, state, action, reward, next_state, done):
@@ -41,19 +40,18 @@ class DQNAgent(object):
     done = np.array([tup[4] for tup in minibatch])
 
     # Q(s', a)
-    print(next_states)
-    print('-------')
-    print(self.model.predict(next_states))
     target = rewards + self.gamma * np.amax(self.model.predict(next_states), axis=1)
+  
     # end state target is reward itself (no lookahead)
     target[done] = rewards[done]
-  
+    
     # Q(s, a)
     target_f = self.model.predict(states)
+  
     # make the agent to approximately map the current state to future discounted reward
-    target_f[range(batch_size), actions] = target
-    self.model.fit(states, target_f, epochs=11, verbose=0)
-    self.last_rmse = np.sqrt(np.mean(target_f - states)**2)
+    for i in range(batch_size):
+      target_f[i, actions[i]] = target[0][i]
+    self.model.fit(states, target_f, epochs=1, verbose=0)
 
     if self.epsilon > self.epsilon_min:
       self.epsilon *= self.epsilon_decay
