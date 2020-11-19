@@ -54,8 +54,8 @@ if __name__ == '__main__':
         state = np.reshape(state, (2, 1))
         agent.remember(state, action, reward, next_state, done)
       state = next_state
-      print('Step: {}/{}, Trade: {}, Stocks: {}, Bal: {} Reward: {}'
-            .format(s + 1, env.max_step, env.last_trade, np.around(env.stock_owned, decimals=1), env.cash_bal, env.last_reward))
+      print('Step: {}/{}, Trade: {}, Stocks: {}, Bal: {} Reward: {} --- Epsilon: {}'
+            .format(s + 1, env.max_step, env.last_trade, np.around(env.stock_owned, decimals=1), env.cash_bal, env.last_reward, agent.epsilon))
       if done:
         print("Episode: {}/{}".format(e + 1, args.episodes))
         break

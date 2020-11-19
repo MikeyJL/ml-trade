@@ -23,6 +23,7 @@ class TradingEnv(gym.Env):
     self.stock_owned = 0
     if self.mode == 'train':
       self.stock_price = self.stock_price_history[self.cur_step]
+      self.cash_start = 100
       self.cash_bal = 100
     else: 
       self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
@@ -56,19 +57,21 @@ class TradingEnv(gym.Env):
   def _trade(self, action):
     if self.mode == 'train':
       if action == 0:
-        self.stock_owned -= 1
-        self.last_trade = 'SELL'
+        self.stock_owned -= 5
+        self.cash_bal += 5 * self.stock_price
+        self.last_trade = 'CLOSE'
       elif action == 2:
-        self.stock_owned += 1
-        self.last_trade = 'BUY'
+        self.stock_owned += 5
+        self.cash_bal -= 5 * self.stock_price
+        self.last_trade = 'OPEN'
       else:
         self.last_trade = 'HOLD'
     else:
       if action == 0:
         LiveData()._open_position('SELL')
-        self.last_trade = 'SELL'
+        self.last_trade = 'CLOSE'
       elif action == 2:
         LiveData()._open_position('BUY')
-        self.last_trade = 'BUY'
+        self.last_trade = 'OPEN'
       else:
         self.last_trade = 'HOLD'

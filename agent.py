@@ -11,7 +11,7 @@ class DQNAgent(object):
     self.state_size = state_size
     self.action_size = action_size
     self.memory = deque(maxlen=2000)
-    self.gamma = 0.99
+    self.gamma = 0.8
     self.epsilon = 1
     self.epsilon_min = 0.01
     self.epsilon_decay = 0.999
@@ -51,7 +51,7 @@ class DQNAgent(object):
     # make the agent to approximately map the current state to future discounted reward
     for i in range(batch_size):
       target_f[i, actions[i]] = target[0][i]
-    self.model.fit(states, target_f, epochs=1, verbose=0)
+    self.model.fit(states, target_f, epochs=11, verbose=0)
 
     if self.epsilon > self.epsilon_min:
       self.epsilon *= self.epsilon_decay
