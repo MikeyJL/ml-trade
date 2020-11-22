@@ -11,6 +11,8 @@ from utils import get_data, maybe_make_dir, get_scaler
 
 if __name__ == '__main__':
   os.system('clear')
+  timestamp = time.strftime('%Y-%m-%d-%H-%M')
+
   parser = argparse.ArgumentParser()
   parser.add_argument('-e', '--episodes', type=int, default=1,
                       help='number of episodes to run')
@@ -23,9 +25,6 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   maybe_make_dir('weights')
-  maybe_make_dir('portfolio_val')
-
-  timestamp = time.strftime('%Y-%m-%d-%H-%M')
 
   data = get_data()
   train_data = data[:data.shape[0]:]
@@ -34,8 +33,7 @@ if __name__ == '__main__':
   env = TradingEnv(train_data, args.mode)
   state_size = env.observation_space
   action_size = env.action_space.n
-  agent = DQNAgent(state_size, action_size)
-  portfolio_value = []
+  agent = DQNAgent(state_size, action_size, train_data)
 
   if args.mode != 'train':
     env = TradingEnv(test_data, args.mode)
@@ -46,16 +44,21 @@ if __name__ == '__main__':
     scaler = get_scaler(env)
     state = scaler.transform(state)
     for s in range(env.max_step):
-      state = np.reshape(state, (1, 2, 1))
+      state = np.reshape(state, (1, state.shape[0], 1))
       action = agent.act(state)
       next_state, reward, done = env._step(action)
       next_state = scaler.transform(next_state)
       if args.mode == 'train':
-        state = np.reshape(state, (2, 1))
+        agent.bal_history.append(env.cash_bal[0])
+        state = np.reshape(state, (state.shape[1], 1))
         agent.remember(state, action, reward, next_state, done)
       state = next_state
       print('Step: {}/{}, Trade: {}, Stocks: {}, Bal: {} Reward: {} --- Epsilon: {}'
-            .format(s + 1, env.max_step, env.last_trade, np.around(env.stock_owned, decimals=1), env.cash_bal, env.last_reward, agent.epsilon))
+            .format(s + 1, env.max_step, env.last_trade,
+                    np.around(env.stock_owned, decimals=1),
+                    np.around(env.cash_bal[0], decimals=2),
+                    np.around(env.last_reward[0], decimals=4),
+                    np.around(agent.epsilon, decimals=2)))
       if done:
         print("Episode: {}/{}".format(e + 1, args.episodes))
         break
@@ -64,8 +67,6 @@ if __name__ == '__main__':
       if args.mode != 'train':
         time.sleep(args.delay)
     if args.mode == 'train':
-      agent.save('weights/{}-dqn.h5'.format(timestamp))
+      agent.save('weights/w-{}.h5'.format(timestamp))
 
-  # save portfolio value history to disk
-  with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
-    pickle.dump(portfolio_value, fp)
+agent._plot_graph()

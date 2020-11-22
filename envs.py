@@ -4,7 +4,7 @@ from gym.utils import seeding
 import numpy as np
 import itertools
 from model import nn_predict
-from ig_api import LiveData
+from agent import DQNAgent
 
 
 class TradingEnv(gym.Env):
@@ -25,8 +25,6 @@ class TradingEnv(gym.Env):
       self.stock_price = self.stock_price_history[self.cur_step]
       self.cash_start = 100
       self.cash_bal = 100
-    else: 
-      self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
     return self._get_obs()
 
 
@@ -39,9 +37,6 @@ class TradingEnv(gym.Env):
       self.stock_price = self.stock_price_history[self.cur_step]
       reward = self.stock_owned * (self.stock_price - prev_stock_price)
       self.cash_bal += reward
-    else:
-      self.stock_price = LiveData()._get_current_price()['snapshot']['bid']
-      reward = float(LiveData()._get_account()['accounts'][1]['balance']['profitLoss'])
     self.last_reward = reward
     done = self.cur_step == self.max_step - 1
     return self._get_obs(), reward, done
@@ -49,7 +44,6 @@ class TradingEnv(gym.Env):
 
   def _get_obs(self):
     obs = []
-    obs.append([self.stock_owned])
     obs.append(self.stock_price)
     return obs
 
@@ -57,21 +51,12 @@ class TradingEnv(gym.Env):
   def _trade(self, action):
     if self.mode == 'train':
       if action == 0:
-        self.stock_owned -= 5
         self.cash_bal += 5 * self.stock_price
-        self.last_trade = 'CLOSE'
+        self.stock_owned = 0
+        self.last_trade = 'SELL'
       elif action == 2:
         self.stock_owned += 5
         self.cash_bal -= 5 * self.stock_price
-        self.last_trade = 'OPEN'
-      else:
-        self.last_trade = 'HOLD'
-    else:
-      if action == 0:
-        LiveData()._open_position('SELL')
-        self.last_trade = 'CLOSE'
-      elif action == 2:
-        LiveData()._open_position('BUY')
         self.last_trade = 'OPEN'
       else:
         self.last_trade = 'HOLD'
