@@ -11,7 +11,7 @@ from utils import get_data, maybe_make_dir, get_scaler
 
 if __name__ == '__main__':
   os.system('clear')
-  timestamp = time.strftime('%Y-%m-%d-%H-%M')
+  timestamp = time.strftime('%Y%m%d')
 
   parser = argparse.ArgumentParser()
   parser.add_argument('-e', '--episodes', type=int, default=1,
@@ -21,6 +21,10 @@ if __name__ == '__main__':
   parser.add_argument('-m', '--mode', type=str, required=True,
                       help='either "train" or "test" by entering target weights file')
   parser.add_argument('-d', '--delay', type=int, default=60,
+                      help='delay between steps')
+  parser.add_argument('-w', '--weights', type=str, default=None,
+                      help='delay between steps')
+  parser.add_argument('-g', '--graph', type=str, default=None,
                       help='delay between steps')
   args = parser.parse_args()
 
@@ -40,6 +44,7 @@ if __name__ == '__main__':
     agent.load(args.mode)
 
   for e in range(args.episodes):
+    agent.epsilon = 1
     state = env._reset()
     scaler = get_scaler(env)
     state = scaler.transform(state)
@@ -57,7 +62,7 @@ if __name__ == '__main__':
             .format(s + 1, env.max_step, env.last_trade,
                     np.around(env.stock_owned, decimals=1),
                     np.around(env.cash_bal[0], decimals=2),
-                    np.around(env.last_reward[0], decimals=4),
+                    np.around(env.rewarded[0], decimals=4),
                     np.around(agent.epsilon, decimals=2)))
       if done:
         print("Episode: {}/{}".format(e + 1, args.episodes))
@@ -66,7 +71,9 @@ if __name__ == '__main__':
         agent.replay(args.batch_size)
       if args.mode != 'train':
         time.sleep(args.delay)
-    if args.mode == 'train':
-      agent.save('weights/w-{}.h5'.format(timestamp))
+    if args.mode == 'train' and args.weights != None:
+      maybe_make_dir('weights/{}'.format(args.weights))
+      agent.save('weights/{}/{}_({}).h5'.format(args.weights, timestamp, int(env.cash_bal[0])))
 
-agent._plot_graph()
+if args.graph != None:
+  agent._plot_graph(args.graph)

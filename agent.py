@@ -14,7 +14,7 @@ class DQNAgent(object):
     self.gamma = 0.8
     self.epsilon = 1
     self.epsilon_min = 0.01
-    self.epsilon_decay = 0.999
+    self.epsilon_decay = 0.99
     self.model = dqn(state_size, action_size)
     self.action_history = []
     self.bal_history = []
@@ -66,7 +66,7 @@ class DQNAgent(object):
     self.model.save_weights(name)
 
 
-  def _plot_graph(self):
+  def _plot_graph(self, graph_name):
     x1 = []
     x2 = []
     for i in range(len(self.action_history)):
@@ -78,4 +78,4 @@ class DQNAgent(object):
     axs[0].plot(x2, self.price_data)
     axs[1].plot(x1, self.action_history)
     axs[2].plot(x1, self.bal_history)
-    plt.show()
+    plt.savefig('figures/{}.png'.format(graph_name))

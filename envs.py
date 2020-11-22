@@ -21,6 +21,7 @@ class TradingEnv(gym.Env):
   def _reset(self):
     self.cur_step = 0
     self.stock_owned = 0
+    self.rewarded = 0
     if self.mode == 'train':
       self.stock_price = self.stock_price_history[self.cur_step]
       self.cash_start = 100
@@ -37,7 +38,7 @@ class TradingEnv(gym.Env):
       self.stock_price = self.stock_price_history[self.cur_step]
       reward = self.stock_owned * (self.stock_price - prev_stock_price)
       self.cash_bal += reward
-    self.last_reward = reward
+    self.rewarded = reward
     done = self.cur_step == self.max_step - 1
     return self._get_obs(), reward, done
 
@@ -45,6 +46,8 @@ class TradingEnv(gym.Env):
   def _get_obs(self):
     obs = []
     obs.append(self.stock_price)
+    obs.append([self.cash_bal])
+    obs.append([self.rewarded])
     return obs
 
 
