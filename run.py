@@ -3,14 +3,12 @@ import time
 import numpy as np
 import argparse
 import re
-import os
 
 from envs import TradingEnv
 from agent import DQNAgent
 from utils import get_data, maybe_make_dir, get_scaler
 
 if __name__ == '__main__':
-  os.system('clear')
   timestamp = time.strftime('%Y%m%d')
 
   parser = argparse.ArgumentParser()
@@ -32,7 +30,6 @@ if __name__ == '__main__':
 
   data = get_data()
   train_data = data[:data.shape[0]:]
-  test_data = data[:data.shape[0]:]
 
   env = TradingEnv(train_data, args.mode)
   state_size = env.observation_space
@@ -40,8 +37,7 @@ if __name__ == '__main__':
   agent = DQNAgent(state_size, action_size, train_data)
 
   if args.mode != 'train':
-    env = TradingEnv(test_data, args.mode)
-    agent.load(args.mode)
+    agent.load('weights/{}.h5'.format(args.mode))
 
   for e in range(args.episodes):
     agent.epsilon = 1

@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 
 class DQNAgent(object):
-  """ A simple Deep Q agent """
   def __init__(self, state_size, action_size, price_data):
     self.state_size = state_size
     self.action_size = action_size
@@ -14,7 +13,7 @@ class DQNAgent(object):
     self.gamma = 0.8
     self.epsilon = 1
     self.epsilon_min = 0.01
-    self.epsilon_decay = 0.99
+    self.epsilon_decay = 0.999
     self.model = dqn(state_size, action_size)
     self.action_history = []
     self.bal_history = []

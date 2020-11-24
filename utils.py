@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 from sklearn.preprocessing import StandardScaler
 
 def get_data():
-  tmr = datetime.today() + timedelta(days=4)
-  yesterday = datetime.today() - timedelta(days=304)
-  df = web.DataReader("GBPUSD", "av-daily", start=yesterday, end=tmr, api_key='Q1XXYJ8NY07Q1UMS')
+  tmr = datetime.today() + timedelta(days=1)
+  yesterday = datetime.today() - timedelta(days=1)
+  df = web.DataReader("GBPUSD", "av-intraday", start=yesterday, end=tmr, api_key='Q1XXYJ8NY07Q1UMS')
   data_filtered = np.array(df.filter(['close']))
   return np.around(data_filtered, decimals=5)
 

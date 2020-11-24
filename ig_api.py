@@ -46,7 +46,7 @@ class LiveData():
 
   def _get_account_val(self):
     return np.sum(float(self._get_account()['accounts'][1]['balance']['balance']) + \
-                  float(self._get_account()['accounts'][1]['balance']['profitLoss']))
+                  float(self._get_account()['accounts'][1]['balance']['profitLoss'])) * 0.1
   
 
   def _get_positions(self):
